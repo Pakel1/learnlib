@@ -64,6 +64,7 @@ public class ADTGrowingAlphabetTest
                                                         Alphabet<Integer> alphabet) {
         return new ADTLearner<>(alphabet,
                                 oracle,
+                                null,
                                 LeafSplitters.DEFAULT_SPLITTER,
                                 ADTExtenders.NOP,
                                 SubtreeReplacers.NEVER_REPLACE);

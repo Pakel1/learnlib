@@ -110,5 +110,9 @@ limitations under the License.
             <artifactId>automata-serialization-dot</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>de.learnlib</groupId>
+            <artifactId>learnlib-parallelism</artifactId>
+        </dependency>
     </dependencies>
 </project>

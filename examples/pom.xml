@@ -166,6 +166,14 @@ limitations under the License.
             <groupId>org.jmockit</groupId>
             <artifactId>jmockit</artifactId>
         </dependency>
+        <dependency>
+            <groupId>de.learnlib</groupId>
+            <artifactId>learnlib-parallelism</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>de.learnlib</groupId>
+            <artifactId>learnlib-adt</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -188,6 +196,7 @@ limitations under the License.
                             <java.awt.headless>false</java.awt.headless>
                         </systemPropertyVariables>
                         <!-- append to existing argLine to nicely work together with jacoco plugin -->
+                        <!--suppress UnresolvedMavenProperty -->
                         <argLine>@{argLine} -javaagent:${org.jmockit:jmockit:jar}</argLine>
                     </configuration>
                 </plugin>
