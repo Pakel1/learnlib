@@ -27,13 +27,13 @@ public class CounterQueryOracle<I,O> implements SymbolQueryOracle<I,O> {
 
     @Override
     public void reset() {
+        queryCounter.incrementAndGet();
         resetCounter.incrementAndGet();
         delegate.reset();
     }
 
     @Override
     public void processQueries(Collection<? extends Query<I, Word<O>>> queries) {
-        queryCounter.incrementAndGet();
         delegate.processQueries(queries);
     }
 

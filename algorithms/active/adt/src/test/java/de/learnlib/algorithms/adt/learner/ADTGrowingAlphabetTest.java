@@ -15,11 +15,6 @@
  */
 package de.learnlib.algorithms.adt.learner;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
-import java.util.function.Consumer;
-
 import de.learnlib.algorithms.adt.config.ADTExtenders;
 import de.learnlib.algorithms.adt.config.LeafSplitters;
 import de.learnlib.algorithms.adt.config.SubtreeReplacers;
@@ -32,6 +27,11 @@ import net.automatalib.util.automata.random.RandomAutomata;
 import net.automatalib.words.Alphabet;
 import net.automatalib.words.Word;
 import net.automatalib.words.impl.Alphabets;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Consumer;
 
 /**
  * @author frohme
@@ -64,7 +64,6 @@ public class ADTGrowingAlphabetTest
                                                         Alphabet<Integer> alphabet) {
         return new ADTLearner<>(alphabet,
                                 oracle,
-                                null,
                                 LeafSplitters.DEFAULT_SPLITTER,
                                 ADTExtenders.NOP,
                                 SubtreeReplacers.NEVER_REPLACE);

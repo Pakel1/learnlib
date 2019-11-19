@@ -1,23 +1,19 @@
 package de.learnlib.examples;
 
-import de.learnlib.acex.AbstractCounterexample;
-import de.learnlib.acex.analyzers.AbstractNamedAcexAnalyzer;
-import de.learnlib.acex.analyzers.AcexAnalysisAlgorithms;
-import de.learnlib.algorithms.adt.config.ADTExtenders;
-import de.learnlib.algorithms.adt.config.LeafSplitters;
-import de.learnlib.algorithms.adt.config.SubtreeReplacers;
+import de.learnlib.acex.analyzers.AcexAnalyzers;
 import de.learnlib.algorithms.adt.learner.ADTLearner;
+import de.learnlib.algorithms.adt.learner.ADTLearnerBuilder;
 import de.learnlib.algorithms.ttt.mealy.TTTLearnerMealy;
-import de.learnlib.api.oracle.MembershipOracle;
+import de.learnlib.api.algorithm.LearningAlgorithm;
 import de.learnlib.api.query.DefaultQuery;
 import de.learnlib.driver.util.MealySimulatorSUL;
 import de.learnlib.filter.cache.mealy.SymbolQueryCache;
 import de.learnlib.filter.statistic.oracle.CounterQueryOracle;
 import de.learnlib.oracle.equivalence.MealySimulatorEQOracle;
 import de.learnlib.oracle.membership.SULSymbolQueryOracle;
-import de.learnlib.oracle.parallelism.ParallelOracle;
-import de.learnlib.oracle.parallelism.StaticIndependentParallelOracle;
+import de.learnlib.oracle.membership.SimulatorOracle;
 import de.learnlib.oracle.parallelism.StaticParallelOracle;
+import de.learnlib.oracle.parallelism.SuperOracle;
 import net.automatalib.automata.transducers.MealyMachine;
 import net.automatalib.automata.transducers.impl.compact.CompactMealy;
 import net.automatalib.words.Alphabet;
@@ -52,39 +48,45 @@ public class MyExample {
         target.addTransition(2, 'a', 2, 1);
         target.addTransition(2, 'b', 1, 0);
 
+
+
         //create oracles & cache
         MealySimulatorEQOracle<Character, Integer> orc = new MealySimulatorEQOracle<Character, Integer>(target);
         SULSymbolQueryOracle<Character, Integer> oracle1 = new SULSymbolQueryOracle<>(new MealySimulatorSUL<>(target));
-        SULSymbolQueryOracle<Character, Integer> oracle2 = new SULSymbolQueryOracle<>(new MealySimulatorSUL<>(target));
         SymbolQueryCache<Character, Integer> cache = new SymbolQueryCache<>(oracle1, alphabet);
         CounterQueryOracle<Character, Integer> pipeline = new CounterQueryOracle<>(cache);
 
+        //memberships oracles for StaticParallelOracle
+        SimulatorOracle<Character, Word<Integer>> para1 = new SimulatorOracle<>(target);
+        SimulatorOracle<Character, Word<Integer>> para2 = new SimulatorOracle<>(target);
+        SimulatorOracle<Character, Word<Integer>> para3 = new SimulatorOracle<>(target);
+
         ArrayList arg = new ArrayList<>();
-        arg.add(pipeline);
-        arg.add(oracle2);
-        StaticParallelOracle<Character, Integer> test = new StaticParallelOracle<Character, Integer>((Collection<? extends MembershipOracle<Character, Integer>>) arg,10, ParallelOracle.PoolPolicy.CACHED);
-        StaticIndependentParallelOracle<Character, Integer> parallelOracle = new StaticIndependentParallelOracle(
-                (Collection<? extends MembershipOracle<Character, Integer>>) arg, 10,ParallelOracle.PoolPolicy.CACHED, pipeline);
+        arg.add(para1);
+        arg.add(para2);
+        arg.add(para3);
 
-        //ADT Learner
-        ADTLearner<Character, Integer> learner = new ADTLearner<>(alphabet, oracle1, parallelOracle, LeafSplitters.DEFAULT_SPLITTER,
-                ADTExtenders.EXTEND_BEST_EFFORT, SubtreeReplacers.LEVELED_BEST_EFFORT);
+        StaticParallelOracle<Character,Word<Integer>> parallelOracle = new StaticParallelOracle<>(arg,3
+                ,StaticParallelOracle.PoolPolicy.FIXED);
 
-        //TTT Learner
-        AbstractNamedAcexAnalyzer analyzer = new AbstractNamedAcexAnalyzer("Linear") {
-            @Override
-            public int analyzeAbstractCounterexample(AbstractCounterexample<?> acex, int low, int high) {
-                return AcexAnalysisAlgorithms.linearSearchFwd(acex, low, high);
-            }
-        };
+        SuperOracle<Character, Integer> superOracle = new SuperOracle<>(pipeline, parallelOracle);
 
-        @SuppressWarnings("Unused")
-        TTTLearnerMealy<Character, Integer> learner2 = new TTTLearnerMealy<Character, Integer>(alphabet, pipeline ,analyzer);
+        ADTLearnerBuilder<Character, Integer> builder = new ADTLearnerBuilder<>();
+        ADTLearner<Character, Integer> adtLearner = builder.withOracle(superOracle).withAlphabet(alphabet).create();
+        TTTLearnerMealy<Character, Integer> tttLearner = new TTTLearnerMealy<>(alphabet, superOracle,
+                AcexAnalyzers.LINEAR_BWD);
 
-        //statement below changes learner to TTT (ADT Learner above needs to get -> // )
-        //  TTTLearnerMealy<Character, Integer> learner = learner2;
+        learn(adtLearner, alphabet, orc);
+        printModel(adtLearner);
+        printStatistic(pipeline);
 
-        //learning setup
+        learn(tttLearner, alphabet, orc);
+        printModel(tttLearner);
+        printStatistic(pipeline);
+    }
+
+    public static void learn(LearningAlgorithm.MealyLearner<Character,Integer> learner, Alphabet<Character> alphabet,
+                             MealySimulatorEQOracle<Character, Integer> orc){
         DefaultQuery<Character, Word<Integer>> counterexample = null;
         do {
             if (counterexample == null) {
@@ -99,8 +101,9 @@ public class MyExample {
             counterexample = orc.findCounterExample(learner.getHypothesisModel(), alphabet);
 
         } while (counterexample != null);
+    }
 
-
+    public static void printModel(LearningAlgorithm.MealyLearner<Character,Integer> learner){
         System.out.println("------------------------------------------");
         MealyMachine<?, Character, ?, Integer> model1 = learner.getHypothesisModel();
         Collection<Character> test1 = new ArrayList<>();
@@ -124,14 +127,14 @@ public class MyExample {
         System.out.print("INPUT:bbb - Successors: ");
         System.out.println(model1.getState(test2));
         System.out.println("------------------------------------------");
+    }
 
+    public static void printStatistic(CounterQueryOracle<Character, Integer> pipeline) {
         System.out.print("Symbol Count: ");
         System.out.println(pipeline.getSymbolCount());
         System.out.print("Reset Count: ");
         System.out.println(pipeline.getResetCount());
         System.out.print("Query Count: ");
         System.out.println(pipeline.getQueryCount());
-
-
     }
 }

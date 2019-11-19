@@ -15,19 +15,6 @@
  */
 package de.learnlib.algorithms.adt.learner;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.github.misberner.buildergen.annotations.GenerateBuilder;
 import de.learnlib.algorithms.adt.adt.ADT;
 import de.learnlib.algorithms.adt.adt.ADT.LCAInfo;
@@ -54,7 +41,6 @@ import de.learnlib.api.algorithm.LearningAlgorithm;
 import de.learnlib.api.oracle.SymbolQueryOracle;
 import de.learnlib.api.query.DefaultQuery;
 import de.learnlib.counterexamples.LocalSuffixFinders;
-import de.learnlib.oracle.parallelism.StaticIndependentParallelOracle;
 import de.learnlib.util.MQUtil;
 import net.automatalib.SupportsGrowingAlphabet;
 import net.automatalib.automata.transducers.MealyMachine;
@@ -64,6 +50,9 @@ import net.automatalib.words.Word;
 import net.automatalib.words.WordBuilder;
 import net.automatalib.words.impl.Alphabets;
 import org.checkerframework.checker.nullness.qual.NonNull;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * The main learning algorithm.
@@ -94,17 +83,15 @@ public class ADTLearner<I, O> implements LearningAlgorithm.MealyLearner<I, O>,
 
     public ADTLearner(final Alphabet<I> alphabet,
                       final SymbolQueryOracle<I, O> oracle,
-                      final StaticIndependentParallelOracle parallelOracle,
                       final LeafSplitter leafSplitter,
                       final ADTExtender adtExtender,
                       final SubtreeReplacer subtreeReplacer) {
-        this(alphabet, oracle, parallelOracle, leafSplitter, adtExtender, subtreeReplacer, true);
+        this(alphabet, oracle,leafSplitter, adtExtender, subtreeReplacer, true);
     }
 
     @GenerateBuilder(defaults = BuilderDefaults.class)
     public ADTLearner(final Alphabet<I> alphabet,
                       final SymbolQueryOracle<I, O> oracle,
-                      final StaticIndependentParallelOracle parallelOracle,
                       final LeafSplitter leafSplitter,
                       final ADTExtender adtExtender,
                       final SubtreeReplacer subtreeReplacer,
@@ -112,7 +99,7 @@ public class ADTLearner<I, O> implements LearningAlgorithm.MealyLearner<I, O>,
 
         this.alphabet = alphabet;
         this.observationTree = new ObservationTree<>(this.alphabet);
-        this.oracle = new SQOOTBridge<>(this.observationTree, setCorrectOracle(oracle,parallelOracle), useObservationTree);
+        this.oracle = new SQOOTBridge<>(this.observationTree, oracle, useObservationTree);
 
         this.leafSplitter = leafSplitter;
         this.adtExtender = adtExtender;
@@ -123,11 +110,6 @@ public class ADTLearner<I, O> implements LearningAlgorithm.MealyLearner<I, O>,
         this.openCounterExamples = new ArrayDeque<>();
         this.allCounterExamples = new LinkedHashSet<>();
         this.adt = new ADT<>(leafSplitter);
-    }
-
-    private SymbolQueryOracle<I,O> setCorrectOracle(SymbolQueryOracle<I,O> oracle, StaticIndependentParallelOracle parallelOracle) {
-        if(parallelOracle != null) return parallelOracle.getOracle();
-        return oracle;
     }
 
     @Override
