@@ -15,6 +15,14 @@
  */
 package de.learnlib.oracle.parallelism;
 
+import com.google.common.base.Throwables;
+import de.learnlib.api.oracle.MembershipOracle;
+import de.learnlib.api.query.Query;
+import de.learnlib.setting.LearnLibProperty;
+import de.learnlib.setting.LearnLibSettings;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -23,14 +31,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import com.google.common.base.Throwables;
-import de.learnlib.api.oracle.MembershipOracle;
-import de.learnlib.api.query.Query;
-import de.learnlib.setting.LearnLibProperty;
-import de.learnlib.setting.LearnLibSettings;
-import org.checkerframework.checker.index.qual.NonNegative;
-import org.checkerframework.checker.nullness.qual.NonNull;
 
 /**
  * A membership oracle that statically distributes a set of queries among several threads.
@@ -66,7 +66,7 @@ public class StaticParallelOracle<I, D> implements ParallelOracle<I, D> {
     @NonNegative
     private final int minBatchSize;
     @NonNull
-    private final MembershipOracle<I, D>[] oracles;
+    public final MembershipOracle<I, D>[] oracles;
     @NonNull
     private final ExecutorService executor;
 
